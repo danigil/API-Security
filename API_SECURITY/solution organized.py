@@ -3,7 +3,9 @@ import pandas as pd
 import seaborn as sns
 import numpy as np
 import json
-from datetime import date
+import pickle
+from datetime import date, datetime
+
 
 from sklearn.feature_extraction.text import CountVectorizer, HashingVectorizer
 from sklearn.preprocessing import LabelEncoder
@@ -14,6 +16,11 @@ from collections import Counter
 
 df = None
 features_list = None
+
+def ret_file_name(clf_name):
+    filename = f'dataset{str(dataset_number)}_{clf_name}_{"d"}_{date.today()}'
+
+    return filename
 
 def global_settings():
     global df
@@ -121,7 +128,8 @@ def model(X_train, y_train):
 
     # Train Model
     clf.fit(X_train, y_train)
-
+    clf_name = str(type(clf)).split(".")[-1][:-2]
+    pickle.dump(clf, open(f'./models/{ret_file_name(clf_name),}.dat', mode='wb'))
     return clf
 
 
@@ -156,8 +164,11 @@ def evaluate(clf):
 
 def save_results(clf, test_report, predictions):
     clf_name = str(type(clf)).split(".")[-1][:-2]
-    with open(f'./scores/dataset{str(dataset_number)}_{clf_name}_{date.today()}.txt', mode='w') as file:
+    test_report_target = f'./scores/{ret_file_name(clf_name)}.text'
+    with open(test_report_target, mode='w') as file:
         file.write(test_report)
+        file.write('\n')
+        (file.write(f'{param_name}: {param_value}\n') for param_name, param_value in clf.get_params().items())
 
     # Save your preditions
     enc = LabelEncoder()
