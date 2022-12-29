@@ -188,14 +188,11 @@ if __name__ == '__main__':
     # On these headers we will run a "simple" BOW
     SIMPLE_HEADERS = ['request.headers.Accept-Encoding',
                       'request.headers.Connection',
-                      'request.headers.Host',
-                      'request.headers.Accept',
                       'request.method',
                       'request.headers.Accept-Language',
                       'request.headers.Sec-Fetch-Site',
                       'request.headers.Sec-Fetch-Mode',
                       'request.headers.Sec-Fetch-Dest',
-                      'request.headers.Sec-Fetch-User',
                       'response.status',
                       ]
 
@@ -214,10 +211,14 @@ if __name__ == '__main__':
 
     COLUMNS_TO_REMOVE = ['request.body',
                          'response.headers.Content-Length',
-                         'request.headers.Date']
+                         'request.headers.Date',
+                         'request.headers.Accept',
+                         'request.headers.Sec-Fetch-User',
+                         'request.headers.Host'
+                         ]
 
-    dataset_number = 1
-    test_type = 'label'
+    dataset_number = 4
+    test_type = 'attack_type'
 
     global_settings()
     label_arrangements()
