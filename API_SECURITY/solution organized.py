@@ -14,11 +14,14 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import confusion_matrix, classification_report
 from collections import Counter
 
+from sklearn.tree import DecisionTreeClassifier
+
 df = None
 features_list = None
 
 def ret_file_name(clf_name):
-    filename = f'dataset{str(dataset_number)}_{clf_name}_{"d"}_{date.today()}'
+    now = datetime.now()
+    filename = f'dataset{str(dataset_number)}_{clf_name}_{now.strftime("%H-%M-%S_%d-%m-%Y")}'#_{date.today()
 
     return filename
 
@@ -124,12 +127,13 @@ def train_test_split_ret():
 
 def model(X_train, y_train):
     # We choose our model of choice and set it's hyper parameters you can change anything
-    clf = RandomForestClassifier(n_estimators=100)
+    clf = DecisionTreeClassifier()
 
     # Train Model
     clf.fit(X_train, y_train)
     clf_name = str(type(clf)).split(".")[-1][:-2]
-    pickle.dump(clf, open(f'./models/{ret_file_name(clf_name),}.dat', mode='wb'))
+    if dataset_number < 2:
+        pickle.dump(clf, open(f'./models/{ret_file_name(clf_name),}.dat', mode='wb'))
     return clf
 
 
