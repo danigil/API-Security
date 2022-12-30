@@ -1,0 +1,15 @@
+                     precision    recall  f1-score   support
+
+             Benign    0.98730   0.98282   0.98505     25316
+   Cookie Injection    0.99707   0.99780   0.99744      1366
+Directory Traversal    0.90882   0.88921   0.89891       695
+              LOG4J    0.43226   0.50835   0.46722       659
+        Log Forging    0.99859   0.99299   0.99578       713
+                RCE    0.99856   0.99713   0.99784       696
+      SQL Injection    0.94143   0.95354   0.94744      1399
+                XSS    0.99717   0.99717   0.99717      1415
+
+           accuracy                        0.97164     32259
+          macro avg    0.90765   0.91488   0.91086     32259
+       weighted avg    0.97362   0.97164   0.97256     32259
+
