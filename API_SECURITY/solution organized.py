@@ -1,4 +1,6 @@
 # Imports, settings and first dataset view
+import os
+
 import pandas as pd
 import seaborn as sns
 import numpy as np
@@ -11,6 +13,14 @@ import logging
 now = datetime.now()
 
 current_time = now.strftime("%H-%M-%S_%d-%m-%Y")
+
+
+def check_create_dir(path):
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+
+check_create_dir("./logs/")
 logging.basicConfig(filename=f"./logs/{current_time}.log", level=logging.DEBUG)
 
 from sklearn.feature_extraction.text import CountVectorizer, HashingVectorizer
@@ -25,11 +35,15 @@ from sklearn.tree import DecisionTreeClassifier
 df = None
 features_list = None
 
+
+
+
 def ret_file_name(clf_name):
 
     filename = f'dataset{str(dataset_number)}_{clf_name}_{current_time}'#_{date.today()
 
     return filename
+
 
 def ret_pretty_list_str(list):
     return pprint.pformat(list)
@@ -47,6 +61,7 @@ def global_settings():
     test_type = test_type  # Options are ['label', 'attack_type']
 
     # Read the json and read it to a pandas dataframe object, you can change these settings
+
     with open(f'./datasets/dataset_{str(dataset_number)}_train.json') as file:
         raw_ds = json.load(file)
     df = pd.json_normalize(raw_ds, max_level=2)
@@ -157,6 +172,7 @@ def model(X_train, y_train):
     # Train Model
     clf.fit(X_train, y_train)
     clf_name = str(type(clf)).split(".")[-1][:-2]
+    check_create_dir("./models/")
     if dataset_number < 2:
         pickle.dump(clf, open(f'./models/{ret_file_name(clf_name),}.dat', mode='wb'))
     return clf
@@ -193,6 +209,7 @@ def evaluate(clf):
 
 def save_results(clf, test_report, predictions):
     clf_name = str(type(clf)).split(".")[-1][:-2]
+    check_create_dir("./scores/")
     test_report_target = f'./scores/{ret_file_name(clf_name)}.text'
     with open(test_report_target, mode='w') as file:
         file.write(test_report)
@@ -201,6 +218,7 @@ def save_results(clf, test_report, predictions):
 
     # Save your preditions
     enc = LabelEncoder()
+    check_create_dir("./predictions/")
     np.savetxt(f'./predictions/dataset_{str(dataset_number)}_{test_type}_result.txt', enc.fit_transform(predictions),
                fmt='%2d')
 
@@ -209,7 +227,7 @@ if __name__ == '__main__':
     global SIMPLE_HEADERS, COMPLEX_HEADERS, COLUMNS_TO_REMOVE, dataset_number, test_type
     main_logger = logging.getLogger("main_logger")
 
-    dataset_number = 3
+    dataset_number = 1
     test_type = 'label'
 
     main_logger.info(f'dataset_number {dataset_number}\n')
