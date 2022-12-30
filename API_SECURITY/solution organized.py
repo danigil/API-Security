@@ -5,7 +5,13 @@ import numpy as np
 import json
 import pickle
 from datetime import date, datetime
+import pprint
 
+import logging
+now = datetime.now()
+
+current_time = now.strftime("%H-%M-%S_%d-%m-%Y")
+logging.basicConfig(filename=f"./logs/{current_time}.log", level=logging.DEBUG)
 
 from sklearn.feature_extraction.text import CountVectorizer, HashingVectorizer
 from sklearn.preprocessing import LabelEncoder
@@ -20,10 +26,14 @@ df = None
 features_list = None
 
 def ret_file_name(clf_name):
-    now = datetime.now()
-    filename = f'dataset{str(dataset_number)}_{clf_name}_{now.strftime("%H-%M-%S_%d-%m-%Y")}'#_{date.today()
+
+    filename = f'dataset{str(dataset_number)}_{clf_name}_{current_time}'#_{date.today()
 
     return filename
+
+def ret_pretty_list_str(list):
+    return pprint.pformat(list)
+
 
 def global_settings():
     global df
@@ -40,6 +50,7 @@ def global_settings():
     with open(f'./datasets/dataset_{str(dataset_number)}_train.json') as file:
         raw_ds = json.load(file)
     df = pd.json_normalize(raw_ds, max_level=2)
+    return df.columns.to_list()
 
 
 def label_arrangements():
@@ -81,16 +92,20 @@ def vectorize_df(df):
 
     # Run LabelEncoder on the chosen features
     for column in SIMPLE_HEADERS:
-        df[column] = le.fit_transform(df[column])
+        if column in df.columns.to_list():
+            df[column] = le.fit_transform(df[column])
 
     # Run HashingVectorizer on the chosen features
     for column in COMPLEX_HEADERS:
-        newHVec = h_vec.fit_transform(df[column])
-        df[column] = newHVec.todense()
+        if column in df.columns.to_list():
+            newHVec = h_vec.fit_transform(df[column])
+            df[column] = newHVec.todense()
 
     # Remove some columns that may be needed.. (Or not, you decide)
     for column in COLUMNS_TO_REMOVE:
-        df.drop(column, axis=1, inplace=True)
+        if column in df.columns.to_list():
+            df.drop(column, axis=1, inplace=True)
+
     return df
 
 
@@ -98,7 +113,17 @@ def label_encoding_and_feature_extraction():
     global df
     global features_list
 
+    label_encoding_and_feature_extraction_logger = logging.getLogger("label_encoding_and_feature_extraction")
+
+    list = ret_pretty_list_str(df.columns.to_list())
+    label_encoding_and_feature_extraction_logger.debug(f"columns before encoding: {list}")
+    label_encoding_and_feature_extraction_logger.debug(f"df before encoding: {df.head()}")
+
     df = vectorize_df(df)
+
+    list = ret_pretty_list_str(df.columns.to_list())
+    label_encoding_and_feature_extraction_logger.debug(f"columns after encoding: {list}")
+    label_encoding_and_feature_extraction_logger.debug(f"df after encoding: {df.head()}")
 
     features_list = df.columns.to_list()
     features_list.remove('label')
@@ -182,11 +207,20 @@ def save_results(clf, test_report, predictions):
 
 if __name__ == '__main__':
     global SIMPLE_HEADERS, COMPLEX_HEADERS, COLUMNS_TO_REMOVE, dataset_number, test_type
+    main_logger = logging.getLogger("main_logger")
+
+    dataset_number = 3
+    test_type = 'label'
+
+    main_logger.info(f'dataset_number {dataset_number}\n')
+    main_logger.info(f'test_type {test_type}\n')
     # Setting features for further feature extraction by choosing columns
     # Some will be "simply" encoded via label encoding and others with HashingVectorizer
 
+    ALL_HEADERS = set(global_settings())
+
     # On these headers we will run a "simple" BOW
-    SIMPLE_HEADERS = ['request.headers.Accept-Encoding',
+    SIMPLE_HEADERS = {'request.headers.Accept-Encoding',
                       'request.headers.Connection',
                       'request.method',
                       'request.headers.Accept-Language',
@@ -194,10 +228,11 @@ if __name__ == '__main__':
                       'request.headers.Sec-Fetch-Mode',
                       'request.headers.Sec-Fetch-Dest',
                       'response.status',
-                      ]
+                      'request.headers.Sec-Ch-Ua-Platform'
+                      }
 
     # On these headers we will run HashingVectorizer
-    COMPLEX_HEADERS = ['request.headers.User-Agent',
+    COMPLEX_HEADERS = {'request.headers.User-Agent',
                        'request.headers.Set-Cookie',
                        'request.headers.Date',
                        'request.url',
@@ -207,20 +242,23 @@ if __name__ == '__main__':
                        'request.headers.Content-Length',
                        'request.headers.Cookie',
                        'response.headers.Set-Cookie'
-                       ]
+                       }
 
-    COLUMNS_TO_REMOVE = ['request.body',
-                         'response.headers.Content-Length',
-                         'request.headers.Date',
-                         'request.headers.Accept',
-                         'request.headers.Sec-Fetch-User',
-                         'request.headers.Host'
-                         ]
+    if not SIMPLE_HEADERS.isdisjoint(COMPLEX_HEADERS):
+        raise Exception("SIMPLE_HEADERS and COMPLEX_HEADERS are not disjoint!")
 
-    dataset_number = 4
-    test_type = 'attack_type'
+    COLUMNS_TO_REMOVE = ALL_HEADERS - SIMPLE_HEADERS.union(COMPLEX_HEADERS)
 
-    global_settings()
+
+    main_logger.debug(f'all_headers: {ret_pretty_list_str(ALL_HEADERS)}\n')
+    main_logger.debug(f'simple_headers: {ret_pretty_list_str(SIMPLE_HEADERS)}\n')
+    main_logger.debug(f'complex_headers: {ret_pretty_list_str(COMPLEX_HEADERS)}\n')
+    main_logger.debug(f'columns to remove{ret_pretty_list_str(COLUMNS_TO_REMOVE)}\n')
+
+    if len(COLUMNS_TO_REMOVE) == 0:
+        raise Exception("Took all features, you should do some feature extraction")
+
+
     label_arrangements()
     preprocessing()
     label_encoding_and_feature_extraction()
